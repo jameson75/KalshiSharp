@@ -11,37 +11,37 @@ public sealed class KalshiClientOptions
     /// <summary>
     /// The API key for authentication.
     /// </summary>
-    public required string ApiKey { get; init; }
+    public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
     /// The API secret for request signing.
     /// </summary>
-    public required string ApiSecret { get; init; }
+    public string ApiSecret { get; set; } = string.Empty;
 
     /// <summary>
     /// The target environment. Defaults to <see cref="KalshiEnvironment.Production"/>.
     /// </summary>
-    public KalshiEnvironment Environment { get; init; } = KalshiEnvironment.Production;
+    public KalshiEnvironment Environment { get; set; } = KalshiEnvironment.Production;
 
     /// <summary>
     /// Optional base URI override. If not specified, derived from <see cref="Environment"/>.
     /// </summary>
-    public Uri? BaseUri { get; init; }
+    public Uri? BaseUri { get; set; }
 
     /// <summary>
     /// HTTP request timeout. Defaults to 30 seconds.
     /// </summary>
-    public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(30);
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Tolerance for clock skew between client and server. Defaults to 30 seconds.
     /// </summary>
-    public TimeSpan ClockSkewTolerance { get; init; } = TimeSpan.FromSeconds(30);
+    public TimeSpan ClockSkewTolerance { get; set; } = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Whether to enable client-side rate limiting. Defaults to true.
     /// </summary>
-    public bool EnableRateLimiting { get; init; } = true;
+    public bool EnableRateLimiting { get; set; } = true;
 
     /// <summary>
     /// Gets the effective base URI, using <see cref="BaseUri"/> if specified,
