@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>KalshiSharp.WebSockets</RootNamespace>
+    <AssemblyName>KalshiSharp.WebSockets</AssemblyName>
+    <Description>WebSocket client for KalshiSharp SDK - real-time market data and order updates</Description>
+    <PackageTags>kalshi;trading;api;sdk;websocket;realtime</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KalshiSharp.Core\KalshiSharp.Core.csproj" />
+    <ProjectReference Include="..\KalshiSharp.Models\KalshiSharp.Models.csproj" />
+  </ItemGroup>
+
+</Project>
