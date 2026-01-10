@@ -42,9 +42,9 @@ services.AddKalshiClient(options =>
     options.Environment = KalshiEnvironment.Demo; // or Production
 });
 
-var provider = services.BuildServiceProvider();
+await using var provider = services.BuildServiceProvider();
 var httpClient = provider.GetRequiredService<IKalshiHttpClient>();
-using var client = new KalshiClient(httpClient);
+using var client = new KalshiClient(httpClient);  // Manual instantiation required
 ```
 
 Or use the convenience overload:
@@ -101,9 +101,10 @@ var orderBook = await client.Markets.GetOrderBookAsync("TICKER-ABC");
 Console.WriteLine($"Yes levels: {orderBook.Yes.Count}");
 Console.WriteLine($"No levels: {orderBook.No.Count}");
 
+// Each level is [price, quantity]
 foreach (var level in orderBook.Yes)
 {
-    Console.WriteLine($"  {level.Price}c: {level.Quantity}");
+    Console.WriteLine($"  {level[0]}c: {level[1]} contracts");
 }
 ```
 
@@ -152,11 +153,30 @@ var fills = await client.Portfolio.ListFillsAsync();
 ### WebSocket Real-Time Updates
 
 ```csharp
+using KalshiSharp.Core.Auth;
+using KalshiSharp.Core.Configuration;
 using KalshiSharp.WebSockets;
+using KalshiSharp.WebSockets.Connections;
+using KalshiSharp.WebSockets.ReconnectPolicy;
 using KalshiSharp.WebSockets.Subscriptions;
 using KalshiSharp.Models.WebSocket;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
-await using var wsClient = new KalshiWebSocketClient(options, connection, reconnectPolicy, clock, logger);
+// Create WebSocket client dependencies
+var clientOptions = new KalshiClientOptions
+{
+    ApiKey = "your-api-key",
+    ApiSecret = "your-api-secret",
+    Environment = KalshiEnvironment.Demo
+};
+
+await using var wsClient = new KalshiWebSocketClient(
+    Options.Create(clientOptions),
+    new WebSocketConnection(NullLogger<WebSocketConnection>.Instance),
+    new ExponentialBackoffPolicy(),
+    new SystemClock(),
+    NullLogger<KalshiWebSocketClient>.Instance);
 
 // Handle state changes
 wsClient.StateChanged += (s, e) => Console.WriteLine($"State: {e.NewState}");
@@ -296,7 +316,7 @@ dotnet run --project examples/KalshiSharp.Examples -- all
 ## Requirements
 
 - .NET 8.0 or later
-- Valid Kalshi API credentials
+- Valid Kalshi API credentials (obtain from [Kalshi API Settings](https://kalshi.com/account/api))
 
 ## License
 
