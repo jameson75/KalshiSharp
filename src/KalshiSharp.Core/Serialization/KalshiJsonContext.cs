@@ -5,6 +5,7 @@ using KalshiSharp.Core.Serialization.Converters;
 using KalshiSharp.Models.Common;
 using KalshiSharp.Models.Requests;
 using KalshiSharp.Models.Responses;
+using KalshiSharp.Models.WebSocket;
 
 namespace KalshiSharp.Core.Serialization;
 
@@ -53,6 +54,17 @@ namespace KalshiSharp.Core.Serialization;
 [JsonSerializable(typeof(CreateOrderRequest))]
 [JsonSerializable(typeof(AmendOrderRequest))]
 [JsonSerializable(typeof(CancelOrderRequest))]
+// WebSocket message types
+[JsonSerializable(typeof(WebSocketMessage))]
+[JsonSerializable(typeof(OrderBookUpdate))]
+[JsonSerializable(typeof(OrderBookSnapshotMessage))]
+[JsonSerializable(typeof(TradeUpdate))]
+[JsonSerializable(typeof(OrderUpdate))]
+[JsonSerializable(typeof(HeartbeatMessage))]
+[JsonSerializable(typeof(UnknownMessage))]
+[JsonSerializable(typeof(SubscriptionConfirmation))]
+[JsonSerializable(typeof(UnsubscriptionConfirmation))]
+[JsonSerializable(typeof(ErrorMessage))]
 internal sealed partial class KalshiJsonContext : JsonSerializerContext
 {
 }
