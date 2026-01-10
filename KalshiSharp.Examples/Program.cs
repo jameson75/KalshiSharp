@@ -13,6 +13,7 @@ using KalshiSharp.WebSockets;
 using KalshiSharp.WebSockets.Connections;
 using KalshiSharp.WebSockets.ReconnectPolicy;
 using KalshiSharp.WebSockets.Subscriptions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -22,9 +23,21 @@ Console.WriteLine("KalshiSharp SDK Examples");
 Console.WriteLine("========================");
 Console.WriteLine();
 
-// Configure your API credentials via environment variables or replace with your own
-var apiKey = Environment.GetEnvironmentVariable("KALSHI_API_KEY") ?? "your-api-key";
-var apiSecret = Environment.GetEnvironmentVariable("KALSHI_API_SECRET") ?? "your-api-secret";
+// Build configuration from user-secrets and environment variables
+// To set user-secrets: dotnet user-secrets set "Kalshi:ApiKey" "your-api-key"
+//                      dotnet user-secrets set "Kalshi:ApiSecret" "your-api-secret"
+// Environment variables: KALSHI__APIKEY and KALSHI__APISECRET (double underscore for nesting)
+var configuration = new ConfigurationBuilder()
+    .AddUserSecrets(typeof(Program).Assembly)
+    .AddEnvironmentVariables()
+    .Build();
+
+var apiKey = configuration["Kalshi:ApiKey"] ?? throw new InvalidOperationException(
+    "API key not configured. Set via user-secrets (dotnet user-secrets set \"Kalshi:ApiKey\" \"your-key\") " +
+    "or environment variable KALSHI__APIKEY");
+var apiSecret = configuration["Kalshi:ApiSecret"] ?? throw new InvalidOperationException(
+    "API secret not configured. Set via user-secrets (dotnet user-secrets set \"Kalshi:ApiSecret\" \"your-secret\") " +
+    "or environment variable KALSHI__APISECRET");
 
 // Run examples based on command-line arguments or run all
 var exampleArgs = Environment.GetCommandLineArgs().Skip(1).ToList();
