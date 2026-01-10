@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="KalshiSharp.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\KalshiSharp.Core\KalshiSharp.Core.csproj" />
     <ProjectReference Include="..\KalshiSharp.Models\KalshiSharp.Models.csproj" />
   </ItemGroup>
