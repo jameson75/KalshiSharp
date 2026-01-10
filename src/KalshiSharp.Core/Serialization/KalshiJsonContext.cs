@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using KalshiSharp.Core.Errors;
 using KalshiSharp.Core.Serialization.Converters;
 using KalshiSharp.Models.Common;
+using KalshiSharp.Models.Requests;
 using KalshiSharp.Models.Responses;
 
 namespace KalshiSharp.Core.Serialization;
@@ -48,6 +49,10 @@ namespace KalshiSharp.Core.Serialization;
 [JsonSerializable(typeof(IReadOnlyList<FillResponse>))]
 [JsonSerializable(typeof(IReadOnlyList<ScheduleEntry>))]
 [JsonSerializable(typeof(IReadOnlyList<int[]>))]
+// Request types
+[JsonSerializable(typeof(CreateOrderRequest))]
+[JsonSerializable(typeof(AmendOrderRequest))]
+[JsonSerializable(typeof(CancelOrderRequest))]
 internal sealed partial class KalshiJsonContext : JsonSerializerContext
 {
 }
