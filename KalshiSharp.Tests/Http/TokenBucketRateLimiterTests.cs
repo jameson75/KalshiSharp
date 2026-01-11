@@ -1,5 +1,5 @@
 using FluentAssertions;
-using KalshiSharp.Core.RateLimiting;
+using KalshiSharp.RateLimiting;
 using Xunit;
 
 namespace KalshiSharp.Tests.Http;

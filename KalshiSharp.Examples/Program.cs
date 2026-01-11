@@ -1,10 +1,13 @@
 // KalshiSharp SDK Examples
 // Demonstrates common usage patterns for the Kalshi API client.
 
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.DependencyInjection;
-using KalshiSharp.Core.Errors;
+using System.Globalization;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
+using System.Text;
+using KalshiSharp.Auth;
+using KalshiSharp.Configuration;
+using KalshiSharp.Errors;
 using KalshiSharp.Models.Enums;
 using KalshiSharp.Models.Requests;
 using KalshiSharp.Models.WebSocket;
@@ -14,8 +17,6 @@ using KalshiSharp.WebSockets.Connections;
 using KalshiSharp.WebSockets.ReconnectPolicy;
 using KalshiSharp.WebSockets.Subscriptions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -56,6 +57,13 @@ if (exampleArgs.Count == 0)
 
 var runAll = exampleArgs.Contains("all", StringComparer.OrdinalIgnoreCase);
 
+// Direct API test to isolate signing issues
+if (exampleArgs.Contains("rawtest", StringComparer.OrdinalIgnoreCase))
+{
+    await RawApiTest(apiKey, apiSecret);
+    return;
+}
+
 if (runAll || exampleArgs.Contains("exchange", StringComparer.OrdinalIgnoreCase))
 {
     await ExchangeStatusExample(apiKey, apiSecret);
@@ -84,19 +92,13 @@ static async Task ExchangeStatusExample(string apiKey, string apiSecret)
     Console.WriteLine("=== Example 1: Get Exchange Status ===");
     Console.WriteLine();
 
-    // Create client using DI container
-    var services = new ServiceCollection();
-    services.AddLogging();
-    services.AddKalshiClient(options =>
+    // Create client directly - the simplest way to use KalshiSharp
+    using var client = new KalshiClient(new KalshiClientOptions
     {
-        options.ApiKey = apiKey;
-        options.ApiSecret = apiSecret;
-        options.Environment = KalshiEnvironment.Demo; // Use Demo for testing
+        ApiKey = apiKey,
+        ApiSecret = apiSecret,
+        Environment = KalshiEnvironment.Demo // Use Demo for testing
     });
-
-    await using var provider = services.BuildServiceProvider();
-    var httpClient = provider.GetRequiredService<KalshiSharp.Core.Http.IKalshiHttpClient>();
-    using var client = new KalshiClient(httpClient);
 
     try
     {
@@ -106,10 +108,13 @@ static async Task ExchangeStatusExample(string apiKey, string apiSecret)
 
         // Get exchange schedule
         var schedule = await client.Exchange.GetScheduleAsync();
-        Console.WriteLine($"Schedule entries: {schedule.Schedule.Count}");
-        foreach (var entry in schedule.Schedule.Take(3))
+        Console.WriteLine($"Standard hours entries: {schedule.Schedule.StandardHours.Count}");
+        Console.WriteLine($"Maintenance windows: {schedule.Schedule.MaintenanceWindows.Count}");
+        foreach (var entry in schedule.Schedule.StandardHours.Take(1))
         {
-            Console.WriteLine($"  {entry.StartTime:g} - {entry.EndTime:g}");
+            Console.WriteLine($"  Effective: {entry.StartTime:g} - {entry.EndTime:g}");
+            if (entry.Monday.Count > 0)
+                Console.WriteLine($"    Monday: {entry.Monday[0].OpenTime} - {entry.Monday[0].CloseTime}");
         }
     }
     catch (KalshiException ex)
@@ -128,13 +133,12 @@ static async Task ListMarketsExample(string apiKey, string apiSecret)
     Console.WriteLine("=== Example 2: List Markets with Pagination ===");
     Console.WriteLine();
 
-    var services = new ServiceCollection();
-    services.AddLogging();
-    services.AddKalshiClient(apiKey, apiSecret, KalshiEnvironment.Demo);
-
-    await using var provider = services.BuildServiceProvider();
-    var httpClient = provider.GetRequiredService<KalshiSharp.Core.Http.IKalshiHttpClient>();
-    using var client = new KalshiClient(httpClient);
+    using var client = new KalshiClient(new KalshiClientOptions
+    {
+        ApiKey = apiKey,
+        ApiSecret = apiSecret,
+        Environment = KalshiEnvironment.Production
+    });
 
     try
     {
@@ -142,7 +146,8 @@ static async Task ListMarketsExample(string apiKey, string apiSecret)
         var query = new MarketQuery
         {
             Limit = 5,
-            Status = MarketStatus.Open
+            Status = MarketStatus.Active,
+            MveFilter = "exclude" // Filter out multivariate/parlay markets
         };
 
         var page1 = await client.Markets.ListMarketsAsync(query);
@@ -172,8 +177,8 @@ static async Task ListMarketsExample(string apiKey, string apiSecret)
             var ticker = page1.Items[0].Ticker;
             var orderBook = await client.Markets.GetOrderBookAsync(ticker);
             Console.WriteLine($"\nOrder Book for {ticker}:");
-            Console.WriteLine($"  Yes levels: {orderBook.Yes.Count}");
-            Console.WriteLine($"  No levels: {orderBook.No.Count}");
+            Console.WriteLine($"  Yes levels: {orderBook.Orderbook.Yes.Count}");
+            Console.WriteLine($"  No levels: {orderBook.Orderbook.No.Count}");
         }
     }
     catch (KalshiNotFoundException)
@@ -196,18 +201,17 @@ static async Task OrderExample(string apiKey, string apiSecret)
     Console.WriteLine("=== Example 3: Place and Cancel an Order ===");
     Console.WriteLine();
 
-    var services = new ServiceCollection();
-    services.AddLogging();
-    services.AddKalshiClient(apiKey, apiSecret, KalshiEnvironment.Demo);
-
-    await using var provider = services.BuildServiceProvider();
-    var httpClient = provider.GetRequiredService<KalshiSharp.Core.Http.IKalshiHttpClient>();
-    using var client = new KalshiClient(httpClient);
+    using var client = new KalshiClient(new KalshiClientOptions
+    {
+        ApiKey = apiKey,
+        ApiSecret = apiSecret,
+        Environment = KalshiEnvironment.Demo
+    });
 
     try
     {
         // First, list available markets to get a valid ticker
-        var markets = await client.Markets.ListMarketsAsync(new MarketQuery { Limit = 1, Status = MarketStatus.Open });
+        var markets = await client.Markets.ListMarketsAsync(new MarketQuery { Limit = 1, Status = MarketStatus.Active });
 
         if (markets.Items.Count == 0)
         {
@@ -285,7 +289,7 @@ static async Task WebSocketExample(string apiKey, string apiSecret)
     {
         ApiKey = apiKey,
         ApiSecret = apiSecret,
-        Environment = KalshiEnvironment.Demo
+        Environment = KalshiEnvironment.Production
     };
     var optionsWrapper = Options.Create(clientOptions);
     var clock = new SystemClock();
@@ -318,14 +322,14 @@ static async Task WebSocketExample(string apiKey, string apiSecret)
 
         // Subscribe to order book updates for a specific market
         // First get a market ticker from REST API
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddKalshiClient(apiKey, apiSecret, KalshiEnvironment.Demo);
-        await using var provider = services.BuildServiceProvider();
-        var httpClient = provider.GetRequiredService<KalshiSharp.Core.Http.IKalshiHttpClient>();
-        using var restClient = new KalshiClient(httpClient);
+        using var restClient = new KalshiClient(new KalshiClientOptions
+        {
+            ApiKey = apiKey,
+            ApiSecret = apiSecret,
+            Environment = KalshiEnvironment.Production
+        });
 
-        var markets = await restClient.Markets.ListMarketsAsync(new MarketQuery { Limit = 1, Status = MarketStatus.Open });
+        var markets = await restClient.Markets.ListMarketsAsync(new MarketQuery { Limit = 1, Status = MarketStatus.Active });
         if (markets.Items.Count == 0)
         {
             Console.WriteLine("No open markets available");
@@ -376,6 +380,10 @@ static async Task WebSocketExample(string apiKey, string apiSecret)
 
                     case UnknownMessage unknown:
                         Console.WriteLine($"[Unknown] Type: {unknown.RawType}");
+                        if (unknown.RawPayload.HasValue)
+                        {
+                            Console.WriteLine($"  Payload: {unknown.RawPayload.Value}");
+                        }
                         break;
                 }
             }
@@ -404,4 +412,58 @@ static async Task WebSocketExample(string apiKey, string apiSecret)
     }
 
     Console.WriteLine();
+}
+
+// ============================================================================
+// Raw API Test - Direct HTTP call to isolate signing issues
+// ============================================================================
+static async Task RawApiTest(string apiKeyId, string privateKeyPem)
+{
+    Console.WriteLine("=== Raw API Test (Direct HTTP) ===");
+    Console.WriteLine();
+
+    const string baseUrl = "https://api.elections.kalshi.com";
+    const string path = "/trade-api/v2/exchange/status";
+    const string method = "GET";
+
+    // Load RSA key
+    using var rsa = RSA.Create();
+    rsa.ImportFromPem(privateKeyPem.AsSpan());
+    Console.WriteLine($"RSA Key loaded: {rsa.KeySize} bits");
+
+    // Build timestamp
+    var timestampMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    var timestampStr = timestampMs.ToString(CultureInfo.InvariantCulture);
+
+    // Build message to sign: timestamp + method + path
+    var message = timestampStr + method + path;
+    Console.WriteLine($"Message to sign: '{message}'");
+
+    // Sign with RSA-PSS
+    var messageBytes = Encoding.UTF8.GetBytes(message);
+    var signatureBytes = rsa.SignData(messageBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
+    var signature = Convert.ToBase64String(signatureBytes);
+    Console.WriteLine($"Signature: {signature[..30]}...");
+
+    // Make HTTP request
+    using var httpClient = new HttpClient();
+    using var request = new HttpRequestMessage(HttpMethod.Get, baseUrl + path);
+
+    request.Headers.TryAddWithoutValidation("KALSHI-ACCESS-KEY", apiKeyId);
+    request.Headers.TryAddWithoutValidation("KALSHI-ACCESS-TIMESTAMP", timestampStr);
+    request.Headers.TryAddWithoutValidation("KALSHI-ACCESS-SIGNATURE", signature);
+    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+    Console.WriteLine();
+    Console.WriteLine("Request headers:");
+    Console.WriteLine($"  KALSHI-ACCESS-KEY: {apiKeyId}");
+    Console.WriteLine($"  KALSHI-ACCESS-TIMESTAMP: {timestampStr}");
+    Console.WriteLine($"  KALSHI-ACCESS-SIGNATURE: {signature[..30]}...");
+    Console.WriteLine();
+
+    var response = await httpClient.SendAsync(request);
+    var content = await response.Content.ReadAsStringAsync();
+
+    Console.WriteLine($"Response: {(int)response.StatusCode} {response.StatusCode}");
+    Console.WriteLine($"Body: {content}");
 }

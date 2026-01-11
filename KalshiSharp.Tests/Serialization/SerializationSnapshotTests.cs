@@ -1,8 +1,8 @@
 using System.Text.Json;
 using FluentAssertions;
-using KalshiSharp.Core.Errors;
-using KalshiSharp.Core.Serialization;
-using KalshiSharp.Core.Serialization.Converters;
+using KalshiSharp.Errors;
+using KalshiSharp.Serialization;
+using KalshiSharp.Serialization.Converters;
 
 namespace KalshiSharp.Tests.Serialization;
 

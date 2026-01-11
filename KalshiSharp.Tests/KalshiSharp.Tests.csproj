@@ -28,13 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\KalshiSharp.Core\KalshiSharp.Core.csproj" />
-    <ProjectReference Include="..\..\src\KalshiSharp.Models\KalshiSharp.Models.csproj" />
-    <ProjectReference Include="..\..\src\KalshiSharp.Rest\KalshiSharp.Rest.csproj" />
-    <ProjectReference Include="..\..\src\KalshiSharp.WebSockets\KalshiSharp.WebSockets.csproj" />
-    <ProjectReference Include="..\KalshiSharp.Core\KalshiSharp.Core.csproj" />
-    <ProjectReference Include="..\KalshiSharp.Rest\KalshiSharp.Rest.csproj" />
-    <ProjectReference Include="..\KalshiSharp.WebSockets\KalshiSharp.WebSockets.csproj" />
+    <ProjectReference Include="..\KalshiSharp\KalshiSharp.csproj" />
   </ItemGroup>
 
 </Project>

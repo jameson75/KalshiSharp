@@ -2,9 +2,9 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using FluentAssertions;
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.Serialization;
+using KalshiSharp.Auth;
+using KalshiSharp.Configuration;
+using KalshiSharp.Serialization;
 using KalshiSharp.Models.Enums;
 using KalshiSharp.Models.WebSocket;
 using KalshiSharp.WebSockets;
@@ -23,6 +23,38 @@ namespace KalshiSharp.Tests.WebSockets;
 /// </summary>
 public sealed class WebSocketReplayTests : IAsyncDisposable
 {
+    // Test RSA private key for signing (not a real key - only used for unit tests)
+    private const string TestRsaPrivateKey = """
+        -----BEGIN PRIVATE KEY-----
+        MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC9nETfOUf/rPoF
+        D53iaRwJ9cOHf6ewQZ3t/M3NQPgF/MYFU7txHzBjo8AuS+BMkLfZpxssl1YTZ6wW
+        jlCEzmNrc4yDXZX9JIF9wMHdla+zOVVKEtsI3Pp9rvDOQof8J3C1+HugVA3Uqlqf
+        Ot6i5T74XBeu4jLpGRF+uLcLtVHEY/LFPZd5pyJTckKi52/eJCKM5mH8szIysxil
+        ewH04nU0p2J9Wp0qMPbC2uCA+8pb++94QUmQIZb4LoCdeT8r66OKz2k+csNITGxo
+        gCfj6uDJ119ckGXWqa+2zvbscVIf75pYqC06/8YB6J7I79Y3Z4NCTWHMJ36oqnoQ
+        HdzRMJlrAgMBAAECggEAHmohMA9fqbcE+efZ4xYKLdzSyvrimqbD3wd0ua5ouokj
+        +HnIcOpYWDtNmf+I0K9MFmk0NjBmWcGA/LNCXjM/Bl7oFLBf3VXMQbA4SMN4hg61
+        zCZ/JQpRUfTMYsGQT5XCAiaEKiEhgNH8rFsEmGuecLdRAzf8g6CGSmX10rZ4kcBR
+        ndIiRJ3INWlDtwSTB1/VVi7gVOwbpzkMvLWvAoeulPWVRDT9vzcJ14/ZHfMAexSj
+        s804lsx/b/Btwh9X0RstXv9VDT13a8ADb0+VKCaxda944AxySGYriD4XaSwIviRJ
+        IA9CnUrplj+VpV4V6bpxWB/1bC1wctr8lp+9szf4qQKBgQDwlI6prST/jDMo8nyr
+        RHbMSYQICRpy88+BjNWCB31albpSow5Q5xJCo5m+mbIp7gHGM1xjAC0CJCYI66pU
+        HyY6zjCaDhD6ZFtSidLfbiEQFfSsmH+Zh66DO3P3Zl/EEuA/l5JJRK02KnExcbqq
+        uf4YQQQqfu4y15ClWqHOcrK8MwKBgQDJw2XVlkA+Y4OAfwlSjJQ/0o5tlYnnFu9H
+        tvkCaYACmzhzOdxtFWeDu3e2h0bv/2RabMv0Z+ss/jbEm+a2JYAtU3B0ROkE+T07
+        o1rmsYcAwIafP02VrbxcCxoiCUQfsiEKKkntJ13gVUn27i8pCO19NNsn+x/hvqGq
+        4bld0YB16QKBgAb6eCzpzdHv0igU6JLbOIrycvb8tJyy/8jlOeg8qWEwSKhO/IJS
+        QZBXSIVj1ewrcDe8k6h3f9a5D7VgiJ9KDATWqEg/sjRhJtj9EHXUrvbVfDRpdAIT
+        EnfSCKobeRmp5oFRtzeS22df0cq6XszG+lzfvewxpF0rLZHuUBU59H9LAoGBAI0X
+        A+5RTImUQ1AnBdjhD4Z18j11deLQqfEnZYgnSGoKK3aAPsFVV3bKMJPGk3eey4lk
+        TVeTF+T1vEzOjI5ROQn5MElOKvjcZdJ/kECEYljHSRyxQsrpnC9tYA/vFOFpSit2
+        mQ2rGr2WRsvTkc0LPi/xN1QFCy1shlcd0+dkaoWJAoGAH7JB8B4dkF4wiMw8REeU
+        VGgsrK4Az4DpVrMwvRAgiclQ2BWRKKYomYFRQTaxZQiK6e6+U6Wx+uCtD6xfGqPL
+        WSbtzPKf+c7URfAI+hggsvDmHlLtCNrv0uPPv3g0Qzw3l8hFgJBTT9bb3jgdAxc1
+        +3EvzhRBF16l2qi0IEdPwM0=
+        -----END PRIVATE KEY-----
+        """;
+
     private readonly MockWebSocketConnection _mockConnection;
     private readonly KalshiWebSocketClient _client;
 
@@ -31,7 +63,7 @@ public sealed class WebSocketReplayTests : IAsyncDisposable
         var options = Options.Create(new KalshiClientOptions
         {
             ApiKey = "test-api-key",
-            ApiSecret = "test-api-secret",
+            ApiSecret = TestRsaPrivateKey,
             Environment = KalshiEnvironment.Demo
         });
 
@@ -104,12 +136,12 @@ public sealed class WebSocketReplayTests : IAsyncDisposable
 
         // Assert
         var sentMessages = _mockConnection.SentMessages;
-        sentMessages.Should().HaveCountGreaterOrEqualTo(2); // Auth + Subscribe
+        sentMessages.Should().HaveCountGreaterOrEqualTo(1); // Subscribe (auth is now via headers)
 
         var subscribeMessage = sentMessages[^1];
         subscribeMessage.Should().Contain("\"cmd\":\"subscribe\"");
-        subscribeMessage.Should().Contain("\"channel\":\"orderbook_delta\"");
-        subscribeMessage.Should().Contain("MARKET-ABC");
+        subscribeMessage.Should().Contain("\"channels\":[\"orderbook_delta\"]");
+        subscribeMessage.Should().Contain("\"market_tickers\":[\"MARKET-ABC\"]");
     }
 
     [Fact]
@@ -132,7 +164,7 @@ public sealed class WebSocketReplayTests : IAsyncDisposable
         // Assert
         var lastMessage = _mockConnection.SentMessages[^1];
         lastMessage.Should().Contain("\"cmd\":\"unsubscribe\"");
-        lastMessage.Should().Contain("\"channel\":\"trade\"");
+        lastMessage.Should().Contain("\"channels\":[\"trade\"]");
     }
 
     [Fact]
@@ -573,7 +605,7 @@ public sealed class WebSocketReplayTests : IAsyncDisposable
             }
         }
 
-        public Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
+        public Task ConnectAsync(Uri uri, IReadOnlyDictionary<string, string>? headers = null, CancellationToken cancellationToken = default)
         {
             TransitionState(ConnectionState.Connecting);
             _connected = true;

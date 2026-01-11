@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Net;
 using FluentAssertions;
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.Http;
+using KalshiSharp.Auth;
+using KalshiSharp.Configuration;
+using KalshiSharp.Http;
 using KalshiSharp.Models.Enums;
 using KalshiSharp.Rest.Portfolio;
 using Microsoft.Extensions.Logging.Abstractions;

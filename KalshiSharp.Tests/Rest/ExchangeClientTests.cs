@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Net;
 using FluentAssertions;
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.Http;
+using KalshiSharp.Auth;
+using KalshiSharp.Configuration;
+using KalshiSharp.Http;
 using KalshiSharp.Rest.Exchange;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -148,17 +148,27 @@ public sealed class ExchangeClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                     {
-                        "schedule": [
-                            {
-                                "start_time": "2026-01-10T09:00:00Z",
-                                "end_time": "2026-01-10T17:00:00Z"
-                            },
-                            {
-                                "start_time": "2026-01-11T09:00:00Z",
-                                "end_time": "2026-01-11T17:00:00Z",
-                                "maintenance": "Scheduled maintenance"
-                            }
-                        ]
+                        "schedule": {
+                            "standard_hours": [
+                                {
+                                    "start_time": "2026-01-10T09:00:00Z",
+                                    "end_time": "2026-01-10T17:00:00Z",
+                                    "monday": [{"open_time": "09:30", "close_time": "16:00"}],
+                                    "tuesday": [],
+                                    "wednesday": [],
+                                    "thursday": [],
+                                    "friday": [],
+                                    "saturday": [],
+                                    "sunday": []
+                                }
+                            ],
+                            "maintenance_windows": [
+                                {
+                                    "start_datetime": "2026-01-11T09:00:00Z",
+                                    "end_datetime": "2026-01-11T17:00:00Z"
+                                }
+                            ]
+                        }
                     }
                     """));
 
@@ -167,19 +177,21 @@ public sealed class ExchangeClientTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.Schedule.Should().HaveCount(2);
+        result.Schedule.StandardHours.Should().HaveCount(1);
+        result.Schedule.MaintenanceWindows.Should().HaveCount(1);
 
-        result.Schedule[0].StartTime.Should().Be(DateTimeOffset.Parse("2026-01-10T09:00:00Z", CultureInfo.InvariantCulture));
-        result.Schedule[0].EndTime.Should().Be(DateTimeOffset.Parse("2026-01-10T17:00:00Z", CultureInfo.InvariantCulture));
-        result.Schedule[0].Maintenance.Should().BeNull();
+        result.Schedule.StandardHours[0].StartTime.Should().Be(DateTimeOffset.Parse("2026-01-10T09:00:00Z", CultureInfo.InvariantCulture));
+        result.Schedule.StandardHours[0].EndTime.Should().Be(DateTimeOffset.Parse("2026-01-10T17:00:00Z", CultureInfo.InvariantCulture));
+        result.Schedule.StandardHours[0].Monday.Should().HaveCount(1);
+        result.Schedule.StandardHours[0].Monday[0].OpenTime.Should().Be("09:30");
+        result.Schedule.StandardHours[0].Monday[0].CloseTime.Should().Be("16:00");
 
-        result.Schedule[1].StartTime.Should().Be(DateTimeOffset.Parse("2026-01-11T09:00:00Z", CultureInfo.InvariantCulture));
-        result.Schedule[1].EndTime.Should().Be(DateTimeOffset.Parse("2026-01-11T17:00:00Z", CultureInfo.InvariantCulture));
-        result.Schedule[1].Maintenance.Should().Be("Scheduled maintenance");
+        result.Schedule.MaintenanceWindows[0].StartDatetime.Should().Be(DateTimeOffset.Parse("2026-01-11T09:00:00Z", CultureInfo.InvariantCulture));
+        result.Schedule.MaintenanceWindows[0].EndDatetime.Should().Be(DateTimeOffset.Parse("2026-01-11T17:00:00Z", CultureInfo.InvariantCulture));
     }
 
     [Fact]
-    public async Task GetScheduleAsync_WithEmptySchedule_ReturnsEmptyList()
+    public async Task GetScheduleAsync_WithEmptySchedule_ReturnsEmptyLists()
     {
         // Arrange
         _server.Given(Request.Create()
@@ -188,14 +200,15 @@ public sealed class ExchangeClientTests : IDisposable
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
-                .WithBody("""{"schedule": []}"""));
+                .WithBody("""{"schedule": {"standard_hours": [], "maintenance_windows": []}}"""));
 
         // Act
         var result = await _exchangeClient.GetScheduleAsync();
 
         // Assert
         result.Should().NotBeNull();
-        result.Schedule.Should().BeEmpty();
+        result.Schedule.StandardHours.Should().BeEmpty();
+        result.Schedule.MaintenanceWindows.Should().BeEmpty();
     }
 
     [Fact]

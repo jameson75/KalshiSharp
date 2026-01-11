@@ -9,7 +9,7 @@ A production-grade .NET 8 SDK for the [Kalshi](https://kalshi.com) prediction ma
 - **Async-First**: All operations are async/await with proper cancellation support
 - **Thread-Safe**: Safe for concurrent use from multiple threads
 - **Strongly Typed**: Complete type coverage with nullable reference types enabled
-- **Automatic Signing**: HMAC-SHA256 request signing handled transparently
+- **Automatic Signing**: RSA-PSS request signing handled transparently
 - **Resilience**: Built-in retry with exponential backoff, rate limiting, and circuit breaker
 - **Observability**: OpenTelemetry tracing and metrics integration
 - **Dependency Injection**: First-class support for `IServiceCollection`
@@ -17,53 +17,61 @@ A production-grade .NET 8 SDK for the [Kalshi](https://kalshi.com) prediction ma
 ## Installation
 
 ```bash
-dotnet add package KalshiSharp.Rest
-dotnet add package KalshiSharp.WebSockets  # For real-time updates
+dotnet add package KalshiSharp
 ```
 
 ## Quick Start
 
-### Configuration
+### Basic Usage
 
 ```csharp
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.DependencyInjection;
-using KalshiSharp.Core.Http;
+using KalshiSharp.Configuration;
 using KalshiSharp.Rest;
-using Microsoft.Extensions.DependencyInjection;
 
-var services = new ServiceCollection();
-
-services.AddLogging();
-services.AddKalshiClient(options =>
+// Create a client with your API credentials
+using var client = new KalshiClient(new KalshiClientOptions
 {
-    options.ApiKey = "your-api-key";
-    options.ApiSecret = "your-api-secret";
-    options.Environment = KalshiEnvironment.Demo; // or Production
+    ApiKey = "your-api-key",
+    ApiSecret = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----", // RSA private key in PEM format
+    Environment = KalshiEnvironment.Demo // or Production
 });
 
-await using var provider = services.BuildServiceProvider();
-var httpClient = provider.GetRequiredService<IKalshiHttpClient>();
-using var client = new KalshiClient(httpClient);  // Manual instantiation required
-```
-
-Or use the convenience overload:
-
-```csharp
-services.AddKalshiClient("your-api-key", "your-api-secret", KalshiEnvironment.Demo);
-```
-
-### Get Exchange Status
-
-```csharp
 var status = await client.Exchange.GetStatusAsync();
 Console.WriteLine($"Trading Active: {status.TradingActive}");
+```
 
-var schedule = await client.Exchange.GetScheduleAsync();
-foreach (var entry in schedule.Schedule)
+### With Dependency Injection (ASP.NET Core)
+
+For applications using dependency injection:
+
+```csharp
+using KalshiSharp.Configuration;
+using KalshiSharp.DependencyInjection;
+
+// In Program.cs or Startup.cs
+services.AddKalshiClient(options =>
 {
-    Console.WriteLine($"{entry.StartTime:g} - {entry.EndTime:g}");
+    options.ApiKey = configuration["Kalshi:ApiKey"]!;
+    options.ApiSecret = configuration["Kalshi:ApiSecret"]!;
+    options.Environment = KalshiEnvironment.Production;
+});
+
+// Inject IKalshiClient directly
+public class MyService(IKalshiClient client)
+{
+    public async Task DoSomethingAsync()
+    {
+        var markets = await client.Markets.ListMarketsAsync();
+    }
 }
+```
+
+### Get Exchange Schedule
+
+```csharp
+var schedule = await client.Exchange.GetScheduleAsync();
+Console.WriteLine($"Standard hours entries: {schedule.Schedule.StandardHours.Count}");
+Console.WriteLine($"Maintenance windows: {schedule.Schedule.MaintenanceWindows.Count}");
 ```
 
 ### List Markets with Pagination
@@ -75,7 +83,7 @@ using KalshiSharp.Models.Requests;
 var query = new MarketQuery
 {
     Limit = 10,
-    Status = MarketStatus.Open
+    Status = MarketStatus.Active
 };
 
 var page1 = await client.Markets.ListMarketsAsync(query);
@@ -98,11 +106,11 @@ if (page1.HasMore)
 ```csharp
 var orderBook = await client.Markets.GetOrderBookAsync("TICKER-ABC");
 
-Console.WriteLine($"Yes levels: {orderBook.Yes.Count}");
-Console.WriteLine($"No levels: {orderBook.No.Count}");
+Console.WriteLine($"Yes levels: {orderBook.Orderbook.Yes.Count}");
+Console.WriteLine($"No levels: {orderBook.Orderbook.No.Count}");
 
 // Each level is [price, quantity]
-foreach (var level in orderBook.Yes)
+foreach (var level in orderBook.Orderbook.Yes)
 {
     Console.WriteLine($"  {level[0]}c: {level[1]} contracts");
 }
@@ -153,44 +161,23 @@ var fills = await client.Portfolio.ListFillsAsync();
 ### WebSocket Real-Time Updates
 
 ```csharp
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
+using KalshiSharp.Configuration;
 using KalshiSharp.WebSockets;
-using KalshiSharp.WebSockets.Connections;
-using KalshiSharp.WebSockets.ReconnectPolicy;
 using KalshiSharp.WebSockets.Subscriptions;
 using KalshiSharp.Models.WebSocket;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
-// Create WebSocket client dependencies
-var clientOptions = new KalshiClientOptions
+// Create WebSocket client
+await using var wsClient = new KalshiWebSocketClient(new KalshiClientOptions
 {
     ApiKey = "your-api-key",
-    ApiSecret = "your-api-secret",
-    Environment = KalshiEnvironment.Demo
-};
+    ApiSecret = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----",
+    Environment = KalshiEnvironment.Production
+});
 
-await using var wsClient = new KalshiWebSocketClient(
-    Options.Create(clientOptions),
-    new WebSocketConnection(NullLogger<WebSocketConnection>.Instance),
-    new ExponentialBackoffPolicy(),
-    new SystemClock(),
-    NullLogger<KalshiWebSocketClient>.Instance);
-
-// Handle state changes
-wsClient.StateChanged += (s, e) => Console.WriteLine($"State: {e.NewState}");
-
-// Connect
+// Connect and subscribe
 await wsClient.ConnectAsync();
-
-// Subscribe to order book updates
-var orderBookSub = OrderBookSubscription.ForMarkets("TICKER-ABC");
-await wsClient.SubscribeAsync(orderBookSub);
-
-// Subscribe to trades
-var tradeSub = TradeSubscription.ForMarkets("TICKER-ABC");
-await wsClient.SubscribeAsync(tradeSub);
+await wsClient.SubscribeAsync(OrderBookSubscription.ForMarkets("TICKER-ABC"));
+await wsClient.SubscribeAsync(TradeSubscription.ForMarkets("TICKER-ABC"));
 
 // Process messages
 await foreach (var message in wsClient.Messages)
@@ -208,10 +195,6 @@ await foreach (var message in wsClient.Messages)
             break;
     }
 }
-
-// Cleanup
-await wsClient.UnsubscribeAsync(orderBookSub);
-await wsClient.DisconnectAsync();
 ```
 
 ## Error Handling
@@ -219,7 +202,7 @@ await wsClient.DisconnectAsync();
 The SDK provides strongly-typed exceptions for different error scenarios:
 
 ```csharp
-using KalshiSharp.Core.Errors;
+using KalshiSharp.Errors;
 
 try
 {
@@ -254,8 +237,8 @@ catch (KalshiException ex)
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `ApiKey` | Required | Your Kalshi API key |
-| `ApiSecret` | Required | Your Kalshi API secret |
+| `ApiKey` | Required | Your Kalshi API key ID |
+| `ApiSecret` | Required | Your RSA private key in PEM format |
 | `Environment` | `Production` | `Production` or `Demo` |
 | `BaseUri` | Auto | Override base URI |
 | `Timeout` | 30s | HTTP request timeout |
@@ -266,51 +249,56 @@ catch (KalshiException ex)
 
 ```
 KalshiSharp/
-├── src/
-│   ├── KalshiSharp.Core/          # Core infrastructure
-│   │   ├── Auth/                  # Request signing
-│   │   ├── Configuration/         # Client options
-│   │   ├── Errors/                # Exception types
-│   │   ├── Http/                  # HTTP client pipeline
-│   │   ├── RateLimiting/          # Token bucket limiter
-│   │   └── Serialization/         # JSON converters
-│   ├── KalshiSharp.Models/        # DTOs and enums
+├── KalshiSharp/                   # Main SDK library
+│   ├── Auth/                      # RSA-PSS request signing
+│   ├── Configuration/             # Client options
+│   ├── DependencyInjection/       # IServiceCollection extensions
+│   ├── Errors/                    # Exception types
+│   ├── Http/                      # HTTP client pipeline
+│   ├── Models/                    # DTOs and enums
 │   │   ├── Enums/
 │   │   ├── Requests/
 │   │   ├── Responses/
 │   │   └── WebSocket/
-│   ├── KalshiSharp.Rest/          # REST API clients
+│   ├── RateLimiting/              # Token bucket limiter
+│   ├── Rest/                      # REST API clients
 │   │   ├── Exchange/
 │   │   ├── Markets/
 │   │   ├── Events/
 │   │   ├── Orders/
 │   │   ├── Portfolio/
 │   │   └── Users/
-│   └── KalshiSharp.WebSockets/    # WebSocket client
+│   ├── Serialization/             # JSON converters
+│   └── WebSockets/                # WebSocket client
 │       ├── Connections/
-│       ├── Subscriptions/
-│       └── ReconnectPolicy/
-├── tests/
-│   └── KalshiSharp.Tests/         # Unit and integration tests
-└── examples/
-    └── KalshiSharp.Examples/      # Example console app
+│       ├── ReconnectPolicy/
+│       └── Subscriptions/
+├── KalshiSharp.Tests/             # Unit and integration tests
+└── KalshiSharp.Examples/          # Example console app
 ```
 
 ## Running Examples
 
 ```bash
-# Set credentials
-export KALSHI_API_KEY="your-key"
-export KALSHI_API_SECRET="your-secret"
+# Set credentials via user-secrets (recommended)
+cd KalshiSharp.Examples
+dotnet user-secrets set "Kalshi:ApiKey" "your-api-key-id"
+dotnet user-secrets set "Kalshi:ApiSecret" "-----BEGIN PRIVATE KEY-----
+...your PEM key...
+-----END PRIVATE KEY-----"
+
+# Or via environment variables (double underscore for nesting)
+export KALSHI__APIKEY="your-api-key-id"
+export KALSHI__APISECRET="-----BEGIN PRIVATE KEY-----..."
 
 # Run specific example
-dotnet run --project examples/KalshiSharp.Examples -- exchange
-dotnet run --project examples/KalshiSharp.Examples -- markets
-dotnet run --project examples/KalshiSharp.Examples -- order
-dotnet run --project examples/KalshiSharp.Examples -- websocket
+dotnet run --project KalshiSharp.Examples -- exchange
+dotnet run --project KalshiSharp.Examples -- markets
+dotnet run --project KalshiSharp.Examples -- order
+dotnet run --project KalshiSharp.Examples -- websocket
 
 # Run all examples
-dotnet run --project examples/KalshiSharp.Examples -- all
+dotnet run --project KalshiSharp.Examples -- all
 ```
 
 ## Requirements

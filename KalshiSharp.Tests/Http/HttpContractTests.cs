@@ -1,9 +1,9 @@
 using System.Net;
 using FluentAssertions;
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.Errors;
-using KalshiSharp.Core.Http;
+using KalshiSharp.Auth;
+using KalshiSharp.Configuration;
+using KalshiSharp.Errors;
+using KalshiSharp.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using WireMock.RequestBuilders;

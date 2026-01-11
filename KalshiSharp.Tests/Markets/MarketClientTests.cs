@@ -1,8 +1,8 @@
 using FluentAssertions;
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.Errors;
-using KalshiSharp.Core.Http;
+using KalshiSharp.Auth;
+using KalshiSharp.Configuration;
+using KalshiSharp.Errors;
+using KalshiSharp.Http;
 using KalshiSharp.Models.Enums;
 using KalshiSharp.Models.Requests;
 using KalshiSharp.Rest.Markets;
@@ -78,7 +78,7 @@ public sealed class MarketClientTests : IDisposable
                     "ticker": "AAPL-2024-01-01",
                     "event_ticker": "AAPL-EVENT",
                     "title": "Will Apple reach $200?",
-                    "status": "open",
+                    "status": "active",
                     "yes_bid": 55,
                     "yes_ask": 57,
                     "no_bid": 43,
@@ -98,7 +98,7 @@ public sealed class MarketClientTests : IDisposable
         result.Ticker.Should().Be("AAPL-2024-01-01");
         result.EventTicker.Should().Be("AAPL-EVENT");
         result.Title.Should().Be("Will Apple reach $200?");
-        result.Status.Should().Be(MarketStatus.Open);
+        result.Status.Should().Be(MarketStatus.Active);
         result.Volume.Should().Be(10000);
     }
 
@@ -146,7 +146,7 @@ public sealed class MarketClientTests : IDisposable
                             "ticker": "MARKET-1",
                             "event_ticker": "EVENT-1",
                             "title": "Market 1",
-                            "status": "open",
+                            "status": "active",
                             "yes_bid": 50,
                             "yes_ask": 52,
                             "no_bid": 48,
@@ -194,7 +194,7 @@ public sealed class MarketClientTests : IDisposable
 
         var query = new MarketQuery
         {
-            Status = MarketStatus.Open,
+            Status = MarketStatus.Active,
             EventTicker = "EVENT-123",
             Limit = 50
         };
@@ -266,9 +266,10 @@ public sealed class MarketClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "ticker": "MARKET-XYZ",
-                    "yes": [[55, 100], [54, 200], [53, 150]],
-                    "no": [[45, 100], [44, 250], [43, 175]]
+                    "orderbook": {
+                        "yes": [[55, 100], [54, 200], [53, 150]],
+                        "no": [[45, 100], [44, 250], [43, 175]]
+                    }
                 }
                 """));
 
@@ -277,13 +278,12 @@ public sealed class MarketClientTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.Ticker.Should().Be("MARKET-XYZ");
-        result.Yes.Should().HaveCount(3);
-        result.Yes[0][0].Should().Be(55);
-        result.Yes[0][1].Should().Be(100);
-        result.No.Should().HaveCount(3);
-        result.No[0][0].Should().Be(45);
-        result.No[0][1].Should().Be(100);
+        result.Orderbook.Yes.Should().HaveCount(3);
+        result.Orderbook.Yes[0][0].Should().Be(55);
+        result.Orderbook.Yes[0][1].Should().Be(100);
+        result.Orderbook.No.Should().HaveCount(3);
+        result.Orderbook.No[0][0].Should().Be(45);
+        result.Orderbook.No[0][1].Should().Be(100);
     }
 
     [Fact]
@@ -300,9 +300,10 @@ public sealed class MarketClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "ticker": "MARKET-XYZ",
-                    "yes": [[55, 100]],
-                    "no": [[45, 100]]
+                    "orderbook": {
+                        "yes": [[55, 100]],
+                        "no": [[45, 100]]
+                    }
                 }
                 """));
 
@@ -311,7 +312,7 @@ public sealed class MarketClientTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.Ticker.Should().Be("MARKET-XYZ");
+        result.Orderbook.Should().NotBeNull();
     }
 
     [Fact]
@@ -419,7 +420,7 @@ public sealed class MarketClientTests : IDisposable
                     "ticker": "MARKET-TEST-2024",
                     "event_ticker": "EVENT",
                     "title": "Test",
-                    "status": "open",
+                    "status": "active",
                     "yes_bid": 50,
                     "yes_ask": 50,
                     "no_bid": 50,

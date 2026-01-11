@@ -1,5 +1,5 @@
 using FluentAssertions;
-using KalshiSharp.Core.Http;
+using KalshiSharp.Http;
 using Xunit;
 
 namespace KalshiSharp.Tests.Http;

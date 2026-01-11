@@ -1,6 +1,6 @@
 using System.Text;
 using FluentAssertions;
-using KalshiSharp.Core.Auth;
+using KalshiSharp.Auth;
 
 namespace KalshiSharp.Tests.Auth;
 

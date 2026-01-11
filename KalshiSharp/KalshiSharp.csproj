@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>KalshiSharp</RootNamespace>
+    <AssemblyName>KalshiSharp</AssemblyName>
+  </PropertyGroup>
+
+  <!-- NuGet Package Configuration -->
+  <PropertyGroup>
+    <PackageId>KalshiSharp</PackageId>
+    <Version>1.0.0</Version>
+    <Description>Production-grade .NET 8 SDK for the Kalshi prediction market API. Features REST and WebSocket clients with RSA-PSS signing, automatic retry, rate limiting, circuit breaker, OpenTelemetry observability, and full async/await support.</Description>
+    <PackageTags>kalshi;trading;api;sdk;prediction-market;websocket;rest;finance;betting</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Hurley451/KalshiSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Hurley451/KalshiSharp</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Initial release with full REST API and WebSocket support.</PackageReleaseNotes>
+    <IsPackable>true</IsPackable>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KalshiSharp.Tests" />
+  </ItemGroup>
+
+  <!-- Include README in package -->
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+    <PackageReference Include="Polly.Core" />
+    <PackageReference Include="System.Threading.RateLimiting" />
+  </ItemGroup>
+
+</Project>

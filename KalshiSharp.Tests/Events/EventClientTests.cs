@@ -1,8 +1,8 @@
 using FluentAssertions;
-using KalshiSharp.Core.Auth;
-using KalshiSharp.Core.Configuration;
-using KalshiSharp.Core.Errors;
-using KalshiSharp.Core.Http;
+using KalshiSharp.Auth;
+using KalshiSharp.Configuration;
+using KalshiSharp.Errors;
+using KalshiSharp.Http;
 using KalshiSharp.Models.Enums;
 using KalshiSharp.Models.Requests;
 using KalshiSharp.Rest.Events;
@@ -118,7 +118,7 @@ public sealed class EventClientTests : IDisposable
                             "ticker": "AAPL-MARKET-1",
                             "event_ticker": "AAPL-EVENT",
                             "title": "Will Apple reach $200?",
-                            "status": "open",
+                            "status": "active",
                             "yes_bid": 55,
                             "yes_ask": 57,
                             "no_bid": 43,
@@ -141,7 +141,7 @@ public sealed class EventClientTests : IDisposable
         result.Markets.Should().NotBeNull();
         result.Markets.Should().HaveCount(1);
         result.Markets![0].Ticker.Should().Be("AAPL-MARKET-1");
-        result.Markets[0].Status.Should().Be(MarketStatus.Open);
+        result.Markets[0].Status.Should().Be(MarketStatus.Active);
     }
 
     [Fact]
@@ -237,7 +237,7 @@ public sealed class EventClientTests : IDisposable
 
         var query = new EventQuery
         {
-            Status = MarketStatus.Open,
+            Status = MarketStatus.Active,
             SeriesTicker = "SERIES-123",
             Limit = 50
         };
@@ -312,7 +312,7 @@ public sealed class EventClientTests : IDisposable
                                     "ticker": "MARKET-1",
                                     "event_ticker": "EVENT-1",
                                     "title": "Market 1",
-                                    "status": "open",
+                                    "status": "active",
                                     "yes_bid": 50,
                                     "yes_ask": 52,
                                     "no_bid": 48,
