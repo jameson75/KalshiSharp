@@ -369,7 +369,7 @@ public sealed class OrderClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [
+                    "orders": [
                         {
                             "order_id": "order-001",
                             "ticker": "MARKET-1",
@@ -431,7 +431,7 @@ public sealed class OrderClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [],
+                    "orders": [],
                     "cursor": null
                 }
                 """));
@@ -465,7 +465,7 @@ public sealed class OrderClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [
+                    "orders": [
                         {
                             "order_id": "order-003",
                             "ticker": "MARKET-3",
@@ -511,7 +511,7 @@ public sealed class OrderClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [],
+                    "orders": [],
                     "cursor": null
                 }
                 """));

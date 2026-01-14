@@ -184,7 +184,7 @@ public sealed class EventClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [
+                    "events": [
                         {
                             "event_ticker": "EVENT-1",
                             "title": "Event 1",
@@ -222,7 +222,7 @@ public sealed class EventClientTests : IDisposable
         // Arrange
         _server.Given(Request.Create()
                 .WithPath("/trade-api/v2/events")
-                .WithParam("status", "open")
+                .WithParam("status", "active")
                 .WithParam("series_ticker", "SERIES-123")
                 .WithParam("limit", "50")
                 .UsingGet())
@@ -231,7 +231,7 @@ public sealed class EventClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [],
+                    "events": [],
                     "cursor": null
                 }
                 """));
@@ -265,7 +265,7 @@ public sealed class EventClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [
+                    "events": [
                         {
                             "event_ticker": "EVENT-3",
                             "title": "Event 3",
@@ -302,7 +302,7 @@ public sealed class EventClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "items": [
+                    "events": [
                         {
                             "event_ticker": "EVENT-1",
                             "title": "Event 1",

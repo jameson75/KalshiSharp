@@ -103,7 +103,7 @@ public sealed class PortfolioClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                     {
-                        "items": [
+                        "positions": [
                             {
                                 "ticker": "TICKER-1",
                                 "event_ticker": "EVENT-1",
@@ -177,7 +177,7 @@ public sealed class PortfolioClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                     {
-                        "items": [
+                        "positions": [
                             {
                                 "ticker": "SPECIFIC-TICKER",
                                 "event_ticker": "EVENT-1",
@@ -211,7 +211,7 @@ public sealed class PortfolioClientTests : IDisposable
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
-                .WithBody("""{"items": [], "cursor": null}"""));
+                .WithBody("""{"positions": [], "cursor": null}"""));
 
         // Act
         var result = await _portfolioClient.ListPositionsAsync(eventTicker: "EVENT-123");
@@ -233,7 +233,7 @@ public sealed class PortfolioClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                     {
-                        "items": [
+                        "fills": [
                             {
                                 "trade_id": "trade-123",
                                 "order_id": "order-456",
@@ -285,7 +285,7 @@ public sealed class PortfolioClientTests : IDisposable
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
-                .WithBody("""{"items": [], "cursor": null}"""));
+                .WithBody("""{"fills": [], "cursor": null}"""));
 
         // Act
         var result = await _portfolioClient.ListFillsAsync(cursor: "fill-page-2", limit: 25);
@@ -307,7 +307,7 @@ public sealed class PortfolioClientTests : IDisposable
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
-                .WithBody("""{"items": [], "cursor": null}"""));
+                .WithBody("""{"fills": [], "cursor": null}"""));
 
         // Act
         var result = await _portfolioClient.ListFillsAsync(ticker: "FILTERED-TICKER");
@@ -328,7 +328,7 @@ public sealed class PortfolioClientTests : IDisposable
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
-                .WithBody("""{"items": [], "cursor": null}"""));
+                .WithBody("""{"fills": [], "cursor": null}"""));
 
         // Act
         var result = await _portfolioClient.ListFillsAsync(orderId: "specific-order");
