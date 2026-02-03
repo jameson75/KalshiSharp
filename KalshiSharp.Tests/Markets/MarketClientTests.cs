@@ -76,18 +76,20 @@ public sealed class MarketClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "ticker": "AAPL-2024-01-01",
-                    "event_ticker": "AAPL-EVENT",
-                    "title": "Will Apple reach $200?",
-                    "status": "active",
-                    "yes_bid": 55,
-                    "yes_ask": 57,
-                    "no_bid": 43,
-                    "no_ask": 45,
-                    "volume": 10000,
-                    "volume24_h": 500,
-                    "open_interest": 2500,
-                    "can_close_early": true
+                    "market": {
+                        "ticker": "AAPL-2024-01-01",
+                        "event_ticker": "AAPL-EVENT",
+                        "title": "Will Apple reach $200?",
+                        "status": "active",
+                        "yes_bid": 55,
+                        "yes_ask": 57,
+                        "no_bid": 43,
+                        "no_ask": 45,
+                        "volume": 10000,
+                        "volume24_h": 500,
+                        "open_interest": 2500,
+                        "can_close_early": true
+                    }
                 }
                 """));
 
@@ -418,18 +420,20 @@ public sealed class MarketClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                 {
-                    "ticker": "MARKET-TEST-2024",
-                    "event_ticker": "EVENT",
-                    "title": "Test",
-                    "status": "active",
-                    "yes_bid": 50,
-                    "yes_ask": 50,
-                    "no_bid": 50,
-                    "no_ask": 50,
-                    "volume": 0,
-                    "volume24_h": 0,
-                    "open_interest": 0,
-                    "can_close_early": false
+                    "market": {
+                        "ticker": "MARKET-TEST-2024",
+                        "event_ticker": "EVENT",
+                        "title": "Test",
+                        "status": "active",
+                        "yes_bid": 50,
+                        "yes_ask": 50,
+                        "no_bid": 50,
+                        "no_ask": 50,
+                        "volume": 0,
+                        "volume24_h": 0,
+                        "open_interest": 0,
+                        "can_close_early": false
+                    }
                 }
                 """));
 

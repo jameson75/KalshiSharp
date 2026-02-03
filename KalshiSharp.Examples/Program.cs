@@ -238,7 +238,7 @@ static async Task OrderExample(string apiKey, string apiSecret)
         var order = await client.Orders.CreateOrderAsync(createRequest);
         Console.WriteLine($"Order created: {order.OrderId}");
         Console.WriteLine($"  Status: {order.Status}");
-        Console.WriteLine($"  Filled: {order.FilledCount}/{order.Count}");
+        Console.WriteLine($"  Filled: {order.FillCount}/{order.InitialCount}");
 
         // List orders to verify
         var orders = await client.Orders.ListOrdersAsync();
