@@ -456,6 +456,124 @@ public sealed class WebSocketReplayTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Messages_ReceivesOkMessage()
+    {
+        // Arrange
+        _mockConnection.SetupConnect();
+        await _client.ConnectAsync();
+
+        var okJson = """
+            {
+                "type": "ok",
+                "id": 123,
+                "seq": 999,
+                "market_tickers": ["MARKET-ABC", "MARKET-XYZ"],
+                "market_ids": ["6F31765E-D070-41B9-A6EA-6AF3274B362B", "7A42876F-E181-52CA-B7FB-7BG4385C473C"]
+            }
+            """;
+
+        _mockConnection.EnqueueMessage(okJson);
+
+        // Act
+        var messages = new List<WebSocketMessage>();
+        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+
+        try
+        {
+            await foreach (var msg in _client.Messages.WithCancellation(cts.Token))
+            {
+                messages.Add(msg);
+                if (messages.Count >= 1)
+                {
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected
+        }
+
+        // Assert
+        var okMessage = messages[0].Should().BeOfType<OKMessage>().Subject;
+        okMessage.Id.Should().Be(123);
+        okMessage.Seq.Should().Be(999);
+        okMessage.MarketTickers.Should().NotBeNull();
+        okMessage.MarketTickers!.Should().HaveCount(2);
+        okMessage.MarketTickers![0].Should().Be("MARKET-ABC");
+        okMessage.MarketTickers![1].Should().Be("MARKET-XYZ");
+        okMessage.MarketIds.Should().NotBeNull();
+        okMessage.MarketIds!.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Messages_ReceivesTickerUpdate()
+    {
+        // Arrange
+        _mockConnection.SetupConnect();
+        await _client.ConnectAsync();
+
+        var tickerJson = """
+            {
+                "type": "ticker",
+                "seq": 1234,
+                "msg": {
+                    "market_ticker": "MARKET-ABC",
+                    "market_id": "6F31765E-D070-41B9-A6EA-6AF3274B362B",
+                    "price": 55,
+                    "yes_bid": 54,
+                    "yes_ask": 56,
+                    "price_dollars": "0.55",
+                    "yes_bid_dollars": "0.54",
+                    "yes_ask_dollars": "0.56",
+                    "volume": 10000,
+                    "volume_fp": 10000.00,
+                    "open_interest": 5000,
+                    "open_interest_fp": 5000.00,
+                    "ts": 1704067200000,
+                    "dollar_volume": 5500,
+                    "dollar_open_interest": 2750
+                }
+            }
+            """;
+
+        _mockConnection.EnqueueMessage(tickerJson);
+
+        // Act
+        var messages = new List<WebSocketMessage>();
+        var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+
+        try
+        {
+            await foreach (var msg in _client.Messages.WithCancellation(cts.Token))
+            {
+                messages.Add(msg);
+                if (messages.Count >= 1)
+                {
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected
+        }
+
+        // Assert
+        var tickerUpdate = messages[0].Should().BeOfType<TickerUpdate>().Subject;
+        tickerUpdate.Message.MarketTicker.Should().Be("MARKET-ABC");
+        tickerUpdate.Message.MarketId.Should().Be(Guid.Parse("6F31765E-D070-41B9-A6EA-6AF3274B362B"));
+        tickerUpdate.Message.Price.Should().Be(55);
+        tickerUpdate.Message.YesBid.Should().Be(54);
+        tickerUpdate.Message.YesAsk.Should().Be(56);
+        tickerUpdate.Message.Volume.Should().Be(10000);
+        tickerUpdate.Message.OpenInterest.Should().Be(5000);
+        tickerUpdate.Message.TimeStampMs.Should().Be(1704067200000);
+        tickerUpdate.Message.NoBid.Should().Be(44);
+        tickerUpdate.Message.NoAsk.Should().Be(46);
+    }
+
+    [Fact]
     public async Task StateChanged_EventRaised_OnStateChange()
     {
         // Arrange

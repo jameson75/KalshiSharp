@@ -372,14 +372,9 @@ public sealed partial class KalshiWebSocketClient : IKalshiWebSocketClient
                 return message;
             }
         }
-        catch (JsonException ex)
+        catch (JsonException)
         {
             // Fall through to unknown message handling
-            var x = ex;
-        }
-        catch (Exception ex)
-        {
-            var x = ex;
         }
 
         // Parse as JsonElement to extract type for unknown messages
