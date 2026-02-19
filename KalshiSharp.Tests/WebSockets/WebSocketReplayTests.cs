@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
+using System.Globalization;
 
 namespace KalshiSharp.Tests.WebSockets;
 
@@ -530,7 +531,8 @@ public sealed class WebSocketReplayTests : IAsyncDisposable
                     "volume_fp": 10000.00,
                     "open_interest": 5000,
                     "open_interest_fp": 5000.00,
-                    "ts": 1704067200000,
+                    "ts": 1771526292,
+                    "time": "2026-02-19T18:38:12.398904Z",
                     "dollar_volume": 5500,
                     "dollar_open_interest": 2750
                 }
@@ -568,7 +570,8 @@ public sealed class WebSocketReplayTests : IAsyncDisposable
         tickerUpdate.Message.YesAsk.Should().Be(56);
         tickerUpdate.Message.Volume.Should().Be(10000);
         tickerUpdate.Message.OpenInterest.Should().Be(5000);
-        tickerUpdate.Message.TimeStampMs.Should().Be(1704067200000);
+        tickerUpdate.Message.TimeStamp.Should().Be(1771526292);
+        tickerUpdate.Message.Time.Should().Be(DateTimeOffset.Parse("2026-02-19T18:38:12.398904Z", CultureInfo.InvariantCulture));
         tickerUpdate.Message.NoBid.Should().Be(44);
         tickerUpdate.Message.NoAsk.Should().Be(46);
     }

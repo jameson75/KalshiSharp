@@ -85,7 +85,7 @@ namespace KalshiSharp.Models.WebSocket
             /// Unix timestamp for when the update happened (in seconds)
             /// </summary>
             [JsonPropertyName("ts")]
-            public long TimeStampMs { get; init; }
+            public long TimeStamp { get; init; }
 
             /// <summary>
             /// Number of dollars traded in the market so far
@@ -100,6 +100,12 @@ namespace KalshiSharp.Models.WebSocket
             public int? DollarOpenInterest { get; init; }
 
             /// <summary>
+            /// Timestamp for when the update happened
+            /// </summary>
+            [JsonPropertyName("time")]
+            public DateTimeOffset Time { get; init; }
+
+            /// <summary>
             /// Calculated best bid price for no side
             /// </summary>
             [JsonIgnore]
@@ -110,12 +116,6 @@ namespace KalshiSharp.Models.WebSocket
             /// </summary>
             [JsonIgnore]
             public int? NoAsk { get => 100 - YesBid;}
-
-            /// <summary>
-            /// Unix timestamp for when the update happened
-            /// </summary>
-            [JsonIgnore]
-            public DateTimeOffset TimeStamp => DateTimeOffset.FromUnixTimeMilliseconds(TimeStampMs);
         }
     }
 }
