@@ -161,8 +161,8 @@ public sealed class OrderClientTests : IDisposable
         // Arrange
         const string orderId = "order-12345";
         _server.Given(Request.Create()
-                .WithPath($"/trade-api/v2/portfolio/orders/{orderId}")
-                .UsingPut())
+                .WithPath($"/trade-api/v2/portfolio/orders/{orderId}/amend")
+                .UsingPost())
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
@@ -201,7 +201,10 @@ public sealed class OrderClientTests : IDisposable
 
         var request = new AmendOrderRequest
         {
-            Price = 60,
+            Ticker = "MARKET-ABC",
+            Side = OrderSide.Yes,
+            Action = "buy",
+            YesPrice = 60,
             Count = 15
         };
 
@@ -229,7 +232,13 @@ public sealed class OrderClientTests : IDisposable
     public async Task AmendOrderAsync_WithEmptyOrderId_ThrowsArgumentException()
     {
         // Arrange
-        var request = new AmendOrderRequest { Price = 60 };
+        var request = new AmendOrderRequest 
+        { 
+            Ticker = "MARKET-ABC",
+            Side = OrderSide.No,
+            Action = "sell",
+            NoPrice = 60 
+        };
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() => _client.AmendOrderAsync("", request));

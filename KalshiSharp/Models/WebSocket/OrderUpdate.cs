@@ -100,7 +100,7 @@ public sealed record OrderUpdate : WebSocketMessage<OrderUpdate.MessageBody>
         /// </summary>
         [JsonPropertyName("client_order_id")]
         public string? ClientOrderId { get; init; }
-
+      
         /// <summary>
         /// Order group identifier, if applicable.
         /// </summary>
@@ -111,7 +111,7 @@ public sealed record OrderUpdate : WebSocketMessage<OrderUpdate.MessageBody>
         /// Self-trade prevention type.
         /// </summary>
         [JsonPropertyName("self_trade_prevention_type")]
-        public required string SelfTradePreventionType { get; init; }
+        public string? SelfTradePreventionType { get; init; }
 
         /// <summary>
         /// Order creation time.
@@ -136,21 +136,6 @@ public sealed record OrderUpdate : WebSocketMessage<OrderUpdate.MessageBody>
         /// </summary>
         [JsonPropertyName("subaccount_number")]
         public int? SubaccountNumber { get; init; }
-
-    /// <summary>
-    /// Gets the order expiration time as a DateTimeOffset.
-    /// </summary>
-    [JsonIgnore]
-    public DateTimeOffset? ExpirationTime => ExpirationTimeMs.HasValue
-        ? DateTimeOffset.FromUnixTimeMilliseconds(ExpirationTimeMs.Value)
-        : null;
-
-    /// <summary>
-    /// Self-trade prevention type.
-    /// </summary>
-    [JsonPropertyName("self_trade_prevention_type")]
-    public string? SelfTradePreventionType { get; init; }
-
 
         /// <summary>
         /// Calculated NoPriceInDollars

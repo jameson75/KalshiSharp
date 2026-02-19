@@ -46,8 +46,8 @@ internal sealed class OrderClient : IOrderClient
 
         var httpRequest = new KalshiRequest
         {
-            Method = HttpMethod.Put,
-            Path = $"{BasePath}/{Uri.EscapeDataString(orderId)}",
+            Method = HttpMethod.Post, // even though we're updating an existing resource, Kalshi expects this as an POST.
+            Path = $"{BasePath}/{Uri.EscapeDataString(orderId)}/amend",
             Content = request
         };
 
