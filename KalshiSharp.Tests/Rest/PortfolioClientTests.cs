@@ -103,17 +103,36 @@ public sealed class PortfolioClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                     {
-                        "positions": [
+                        "market_positions": [
                             {
                                 "ticker": "TICKER-1",
-                                "event_ticker": "EVENT-1",
-                                "market_exposure": 100,
+                                "total_traded": 500,
+                                "total_traded_dollars": "5.00",
                                 "position": 100,
-                                "yes_contracts": 10,
-                                "no_contracts": 0,
-                                "average_price_paid": 50,
+                                "position_fp": "100.00",
+                                "market_exposure": 100,
+                                "market_exposure_dollars": "1.00",
+                                "realized_pnl": 0,
+                                "realized_pnl_dollars": "0.00",
+                                "resting_orders_count": 0,
+                                "fees_paid": 10,
+                                "fees_paid_dollars": "0.10",
+                                "last_updated_ts": "2026-02-21T10:00:00Z"
+                            }
+                        ],
+                        "event_positions": [
+                            {
+                                "event_ticker": "EVENT-1",
                                 "total_cost": 500,
-                                "realized_pnl": 0
+                                "total_cost_dollars": "5.00",
+                                "total_cost_shares": 10,
+                                "total_cost_shares_fp": "10.00",
+                                "event_exposure": 100,
+                                "event_exposure_dollars": "1.00",
+                                "realized_pnl": 0,
+                                "realized_pnl_dollars": "0.00",
+                                "fees_paid": 10,
+                                "fees_paid_dollars": "0.10"
                             }
                         ],
                         "cursor": "next-cursor"
@@ -125,20 +144,37 @@ public sealed class PortfolioClientTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().HaveCount(1);
+        result.MarketPositions.Should().HaveCount(1);
         result.Cursor.Should().Be("next-cursor");
         result.HasMore.Should().BeTrue();
 
-        var position = result.Items[0];
-        position.Ticker.Should().Be("TICKER-1");
-        position.EventTicker.Should().Be("EVENT-1");
-        position.MarketExposure.Should().Be(100);
-        position.Position.Should().Be(100);
-        position.YesContracts.Should().Be(10);
-        position.NoContracts.Should().Be(0);
-        position.AveragePricePaid.Should().Be(50);
-        position.TotalCost.Should().Be(500);
-        position.RealizedPnl.Should().Be(0);
+        var marketPosition = result.MarketPositions[0];
+        marketPosition.Ticker.Should().Be("TICKER-1");
+        marketPosition.TotalTraded.Should().Be(500);
+        marketPosition.TotalTradedDollars.Should().Be("5.00");
+        marketPosition.Position.Should().Be(100);
+        marketPosition.PositionFp.Should().Be("100.00");
+        marketPosition.MarketExposure.Should().Be(100);
+        marketPosition.MarketExposureDollars.Should().Be("1.00");
+        marketPosition.RealizedPnl.Should().Be(0);
+        marketPosition.RealizedPnlDollars.Should().Be("0.00");
+        marketPosition.FeesPaid.Should().Be(10);
+        marketPosition.FeesPaidDollars.Should().Be("0.10");
+        marketPosition.LastUpdated.Should().Be(DateTimeOffset.Parse("2026-02-21T10:00:00Z", CultureInfo.InvariantCulture));
+
+        result.EventPositions.Should().HaveCount(1);
+        var eventPosition = result.EventPositions.First();
+        eventPosition.EventTicker.Should().Be("EVENT-1");
+        eventPosition.TotalCost.Should().Be(500);
+        eventPosition.TotalCostDollars.Should().Be("5.00");
+        eventPosition.TotalCostShares.Should().Be(10);
+        eventPosition.TotalCostSharesFp.Should().Be("10.00");
+        eventPosition.EventExposure.Should().Be(100);
+        eventPosition.EventExposureDollars.Should().Be("1.00");
+        eventPosition.RealizedPnl.Should().Be(0);
+        eventPosition.RealizedPnlDollars.Should().Be("0.00");
+        eventPosition.FeesPaid.Should().Be(10);
+        eventPosition.FeesPaidDollars.Should().Be("0.10");
     }
 
     [Fact]
@@ -153,14 +189,15 @@ public sealed class PortfolioClientTests : IDisposable
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
-                .WithBody("""{"items": [], "cursor": null}"""));
+                .WithBody("""{"market_positions": [], "event_positions": [], "cursor": null}"""));
 
         // Act
         var result = await _portfolioClient.ListPositionsAsync(cursor: "page-2", limit: 10);
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().BeEmpty();
+        result.MarketPositions.Should().BeEmpty();
+        result.EventPositions.Should().BeEmpty();
         result.HasMore.Should().BeFalse();
     }
 
@@ -177,16 +214,24 @@ public sealed class PortfolioClientTests : IDisposable
                 .WithHeader("Content-Type", "application/json")
                 .WithBody("""
                     {
-                        "positions": [
+                        "market_positions": [
                             {
                                 "ticker": "SPECIFIC-TICKER",
-                                "event_ticker": "EVENT-1",
-                                "market_exposure": 50,
+                                "total_traded": 250,
+                                "total_traded_dollars": "2.50",
                                 "position": 50,
-                                "yes_contracts": 5,
-                                "no_contracts": 0
+                                "position_fp": "50.00",
+                                "market_exposure": 50,
+                                "market_exposure_dollars": "0.50",
+                                "realized_pnl": 0,
+                                "realized_pnl_dollars": "0.00",
+                                "resting_orders_count": 0,
+                                "fees_paid": 5,
+                                "fees_paid_dollars": "0.05",
+                                "last_updated_ts": "2026-01-10T10:00:00Z"
                             }
                         ],
+                        "event_positions": [],
                         "cursor": null
                     }
                     """));
@@ -196,8 +241,8 @@ public sealed class PortfolioClientTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.Items.Should().HaveCount(1);
-        result.Items[0].Ticker.Should().Be("SPECIFIC-TICKER");
+        result.MarketPositions.Should().HaveCount(1);
+        result.MarketPositions[0].Ticker.Should().Be("SPECIFIC-TICKER");
     }
 
     [Fact]
@@ -211,7 +256,7 @@ public sealed class PortfolioClientTests : IDisposable
             .RespondWith(Response.Create()
                 .WithStatusCode(200)
                 .WithHeader("Content-Type", "application/json")
-                .WithBody("""{"positions": [], "cursor": null}"""));
+                .WithBody("""{"market_positions": [], "event_positions": [], "cursor": null}"""));
 
         // Act
         var result = await _portfolioClient.ListPositionsAsync(eventTicker: "EVENT-123");
