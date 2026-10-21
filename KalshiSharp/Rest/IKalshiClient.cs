@@ -1,5 +1,6 @@
 using KalshiSharp.Rest.Events;
 using KalshiSharp.Rest.Exchange;
+using KalshiSharp.Rest.Historical;
 using KalshiSharp.Rest.Markets;
 using KalshiSharp.Rest.Orders;
 using KalshiSharp.Rest.Portfolio;
@@ -46,4 +47,9 @@ public interface IKalshiClient : IDisposable
     /// Gets the users client for user profile endpoints.
     /// </summary>
     IUserClient Users { get; }
+
+    /// <summary>
+    /// Gets the historical client for historical endpoints.
+    /// </summary>
+    IHistoricalClient Historical { get; }
 }

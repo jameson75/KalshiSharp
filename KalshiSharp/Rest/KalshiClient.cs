@@ -4,6 +4,7 @@ using KalshiSharp.Configuration;
 using KalshiSharp.Http;
 using KalshiSharp.Rest.Events;
 using KalshiSharp.Rest.Exchange;
+using KalshiSharp.Rest.Historical;
 using KalshiSharp.Rest.Markets;
 using KalshiSharp.Rest.Orders;
 using KalshiSharp.Rest.Portfolio;
@@ -26,6 +27,7 @@ public sealed class KalshiClient : IKalshiClient
     private readonly IOrderClientV2 _ordersV2;
     private readonly IPortfolioClient _portfolio;
     private readonly IUserClient _users;
+    private readonly IHistoricalClient _historical;
 
     // Resources we own and must dispose (only set when using direct instantiation)
     private readonly HttpClient? _ownedHttpClient;
@@ -86,6 +88,7 @@ public sealed class KalshiClient : IKalshiClient
         _ordersV2 = new OrderClientV2(kalshiHttpClient);
         _portfolio = new PortfolioClient(kalshiHttpClient);
         _users = new UserClient(kalshiHttpClient);
+        _historical = new HistoricalClient(kalshiHttpClient);
     }
 
     /// <summary>
@@ -104,6 +107,7 @@ public sealed class KalshiClient : IKalshiClient
         _ordersV2 = new OrderClientV2(httpClient);
         _portfolio = new PortfolioClient(httpClient);
         _users = new UserClient(httpClient);
+        _historical = new HistoricalClient(httpClient);
     }
 
     /// <summary>
@@ -117,6 +121,7 @@ public sealed class KalshiClient : IKalshiClient
     /// <param name="ordersV2">The orders V2 client.</param>
     /// <param name="portfolio">The portfolio client.</param>
     /// <param name="users">The users client.</param>
+    /// <param name="historical">The historical client.</param>
     public KalshiClient(
         IExchangeClient exchange,
         IMarketClient markets,
@@ -124,7 +129,8 @@ public sealed class KalshiClient : IKalshiClient
         IOrderClient orders,
         IOrderClientV2 ordersV2,
         IPortfolioClient portfolio,
-        IUserClient users)
+        IUserClient users,
+        IHistoricalClient historical)
     {
         _exchange = exchange ?? throw new ArgumentNullException(nameof(exchange));
         _markets = markets ?? throw new ArgumentNullException(nameof(markets));
@@ -133,6 +139,7 @@ public sealed class KalshiClient : IKalshiClient
         _ordersV2 = ordersV2 ?? throw new ArgumentNullException(nameof(ordersV2));
         _portfolio = portfolio ?? throw new ArgumentNullException(nameof(portfolio));
         _users = users ?? throw new ArgumentNullException(nameof(users));
+        _historical = historical ?? throw new ArgumentNullException(nameof(historical));
     }
 
     /// <inheritdoc />
@@ -202,6 +209,16 @@ public sealed class KalshiClient : IKalshiClient
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             return _users;
+        }
+    }
+
+    /// <inheritdoc />
+    public IHistoricalClient Historical
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _historical;
         }
     }
 

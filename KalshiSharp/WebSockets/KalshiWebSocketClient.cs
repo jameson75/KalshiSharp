@@ -374,6 +374,13 @@ public sealed partial class KalshiWebSocketClient : IKalshiWebSocketClient
         catch (JsonException)
         {
             // Fall through to unknown message handling
+            var x = 0;
+            x++;
+        }
+        catch (Exception)
+        {
+            var x = 0;
+            x++;
         }
 
         // Parse as JsonElement to extract type for unknown messages
@@ -487,7 +494,7 @@ public sealed partial class KalshiWebSocketClient : IKalshiWebSocketClient
         await _sendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await _connection.SendAsync(bytes, cancellationToken).ConfigureAwait(false);
+            await _connection.SendAsync(bytes, cancellationToken).ConfigureAwait(false);          
         }
         finally
         {

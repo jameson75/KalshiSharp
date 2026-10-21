@@ -4,6 +4,6 @@
     {
         OneMinute = 1,
         OneHour = 60,
-        OnDay = 1440
+        OneDay = 1440
     }
 }

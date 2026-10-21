@@ -36,7 +36,7 @@ namespace KalshiSharp.Models.Requests
         /// 2. Projecting it forward to the first period boundary(calculated as the next period interval after start_ts)
         /// 3. Setting all OHLC prices to null, and previous_price to the close price from the real candlestick
         /// </remarks>       
-        public bool IncludeLatestBeforeStart { get; init; }
+        public bool? IncludeLatestBeforeStart { get; init; }
 
         /// <summary>
         /// Builds the query string for the API request.
@@ -49,7 +49,7 @@ namespace KalshiSharp.Models.Requests
             builder.Append("start_ts", StartTimestamp.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));            
             builder.Append("end_ts", EndTimestamp.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture));
             builder.Append("period_interval", ((int)PeriodInterval).ToString(CultureInfo.InvariantCulture));
-            builder.AppendIfNotEmpty("include_latest_before_start", IncludeLatestBeforeStart.ToString().ToLowerInvariant());
+            builder.AppendIfNotEmpty("include_latest_before_start", IncludeLatestBeforeStart?.ToString().ToLowerInvariant());
 
             return builder.Build();
         }
